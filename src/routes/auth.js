@@ -1,6 +1,6 @@
 const Router = require('express-promise-router')
 const router = new Router()
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 
 module.exports = function(options) {
 	let {config, mongo, mdlwr, __} = options
