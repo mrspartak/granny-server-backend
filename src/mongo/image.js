@@ -21,7 +21,9 @@ function LModel(options) {
 		//hash of modifications Object
 		hash: String,
 		//list of modifications
-		modifications: Object
+		modifications: Object,
+		//format
+		format: String
 	})
 
 	let childRefImgObjDescription = Object.assign({}, refImgObjDescription, {

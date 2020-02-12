@@ -46,6 +46,7 @@ module.exports = function(options) {
 			let resizeRegex = /^(\d+)x(\d+)$/gi
 			let progressiveRegex = /^pr$/gi
 			let qualityRegex = /^q(\d+)$/gi
+			let formatRegex = /^(jpg|png|webp|tiff)$/gi
 
 			modifications.forEach((modification) => {
 				modification = __.sanitizePath(modification)
@@ -61,6 +62,9 @@ module.exports = function(options) {
 
 				let isQuality = qualityRegex.exec(modification) 
 				if(isQuality) modifiers.quality = +isQuality[1]
+
+				let isFormat = formatRegex.exec(modification)
+				if(isFormat) modifiers.format = isFormat[1]
 			})
 
 			log.debug('/i/', 'Got modifiers', modifiers)
@@ -88,6 +92,8 @@ module.exports = function(options) {
 			let readableStream = await minio.getObject(img.domain, `${img.s3_folder}/${refImage.s3_file}`)
 			let writableStream = new stream.PassThrough()
 
+			let format = modifiers.format ? modifiers.format : (refImage.format ? refImage.format : img.format)
+
 			let pipeline = sharp()
 			if(modifiers.resize) pipeline.resize(modifiers.resize.width, modifiers.resize.height)
 			if(modifiers.progressive) {
@@ -100,6 +106,9 @@ module.exports = function(options) {
 				if(img.format == 'webp') pipeline.webp({quality: modifiers.quality})
 				if(img.format == 'tiff') pipeline.tiff({quality: modifiers.quality})
 			}
+			if(modifiers.format) {
+				pipeline.toFormat(modifiers.format)
+			}
 
 			readableStream.pipe(pipeline).pipe(writableStream) 
 
@@ -110,6 +119,7 @@ module.exports = function(options) {
 			if(!img.refChildren) img.refChildren = {}
 			refChildren = {
 				s3_file: fileName,
+				format,
 				etag,
 				hash: modSign,
 				width: modifiers.resize ? modifiers.resize.width : refImage.width,
@@ -129,8 +139,9 @@ module.exports = function(options) {
 	})
 
 	async function sendImage(res, image, refImage) {
+		let format = refImage.format ? refImage.format : image.format
 		res.set({
-			'Content-Type': `image/${image.format}`,
+			'Content-Type': `image/${format}`,
 			'ETag': refImage.etag
 		})
 

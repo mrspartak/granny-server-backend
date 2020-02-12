@@ -45,15 +45,17 @@ module.exports = async function(options){
 
 	options.mdlwr.ACCESS_KEY_SECRET = async function(req, res, next) {
 		var sign = req.method == 'POST' ? req.body.sign : req.query.sign
-		if(!sign) return res.json({succes: false, error: 'authorization_required'})
+		log.debug('ACCESS_KEY_SECRET', req.method, req.body, req.query)
+		if(!sign) return res.json({succes: false, error: 'authorization_required', error_code: 1})
 
 		var [key, sign] = sign.split('||')
+		log.debug('ACCESS_KEY_SECRET', key, sign)
 
 		let domain = await mongo.Domain.findOne({accessKey: key}).exec()
-		if(!domain) return res.json({succes: false, error: 'authorization_required'})
+		if(!domain) return res.json({succes: false, error: 'authorization_required', error_code: 2})
 
 		let signCheck = crypto.createHmac('sha1', domain.accessSecret).update(domain.accessKey).digest('hex')
-		if(signCheck != sign) return res.json({succes: false, error: 'authorization_required'})
+		if(signCheck != sign) return res.json({succes: false, error: 'authorization_required', error_code: 3})
 
 		req.domain = domain
 		next()

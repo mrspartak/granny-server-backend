@@ -9,6 +9,7 @@ function APP(options) {
 		const moment = require('moment'); moment.locale('ru')
 		const sharp = require('sharp')
 		const md5 = require('nano-md5')
+		const fs = require('fs').promises
 
 		/* Config from env */
 		const config = {
@@ -19,10 +20,15 @@ function APP(options) {
 			APP_INITIATED: false,
 
 			S3_HOST: process.env.S3_HOST || '127.0.0.1',
-			S3_PORT: process.env.S3_PORT || 9000,
-			S3_ACCESS_KEY: process.env.S3_ACCESS_KEY || 'minioadmin',
-			S3_ACCESS_SECRET: process.env.S3_ACCESS_SECRET || 'minioadmin'
+			S3_PORT: process.env.S3_PORT || 9000
 		}
+		if(process.env.S3_ACCESS_KEY) config.S3_ACCESS_KEY = process.env.S3_ACCESS_KEY
+		else if(process.env.S3_ACCESS_KEY_FILE) config.S3_ACCESS_KEY = (await fs.readFile('/run/secrets/'+ process.env.S3_ACCESS_KEY_FILE)).toString()
+		else config.S3_ACCESS_KEY = 'minioadmin'
+
+		if(process.env.S3_ACCESS_SECRET) config.S3_ACCESS_SECRET = process.env.S3_ACCESS_SECRET
+		else if(process.env.S3_ACCESS_SECRET_FILE) config.S3_ACCESS_SECRET = (await fs.readFile('/run/secrets/'+ process.env.S3_ACCESS_SECRET_FILE)).toString()
+		else config.S3_ACCESS_SECRET = 'minioadmin'
 
 		/* Logger */
 		const log = require(__.path('utils/log'))({
