@@ -23,7 +23,14 @@ module.exports = function(options) {
 
 	/*
 		modifiers: 
-			divider - /_/, ex cdn.example.com/i/path/to/file.jpg/_/100x100
+			divider - /_/, ex cdn.example.com/i/path/to/file.jpg/_/100x100/q50/wepb
+
+			- resize: 100x100
+			- progressive: pr (supported by jpeg|png)
+			- quality: q50 (from 1 to 100)
+			- format: jpg|png|webp|tiff
+			- black and white: bw
+			- blur: bl or bl_10 (from 1 to 1000 gaussian blur)
 	*/
 	router.get('/i/:path([a-zA-Z0-9_\\-/\.]+)', async (req, res) => {
 		if(!req.params || !req.params.path) return res.json({success: false, error: 'request_is_incorrect'})
@@ -48,6 +55,7 @@ module.exports = function(options) {
 			let qualityRegex = /^q(\d+)$/gi
 			let formatRegex = /^(jpg|png|webp|tiff)$/gi
 			let bwRegex = /^(bw)$/gi
+			let blurRegex = /^bl(_\d+)?$/gi
 
 			modifications.forEach((modification) => {
 				modification = __.sanitizePath(modification)
@@ -62,13 +70,23 @@ module.exports = function(options) {
 				if(isProgressive) modifiers.progressive = 1
 
 				let isQuality = qualityRegex.exec(modification) 
-				if(isQuality) modifiers.quality = +isQuality[1]
+				if(isQuality) {
+					let tmpModifier = +isQuality[1]
+					if(tmpModifier >= 1 && tmpModifier <= 100) modifiers.quality = +isQuality[1]
+				}
 
 				let isFormat = formatRegex.exec(modification)
 				if(isFormat) modifiers.format = isFormat[1]
 
 				let isBw = bwRegex.exec(modification)
 				if(isBw) modifiers.bw = true
+
+				let isBlur = blurRegex.exec(modification)
+				if(isBlur) {
+					let tmpModifier = isBlur[1] ? +(isBlur[1].replace('_', '')) : true
+					if(tmpModifier < 1 || tmpModifier > 1000) tmpModifier = true
+					modifiers.blur = tmpModifier
+				}
 			})
 
 			log.debug('/i/', 'Got modifiers', modifiers)
@@ -117,6 +135,10 @@ module.exports = function(options) {
 				pipeline.modulate({
 					saturation: 0
 				})
+			}
+			if(modifiers.blur) {
+				if(modifiers.blur === true) pipeline.blur()
+				else pipeline.blur(modifiers.blur)
 			}
 
 			readableStream.pipe(pipeline).pipe(writableStream) 
