@@ -47,6 +47,7 @@ module.exports = function(options) {
 			let progressiveRegex = /^pr$/gi
 			let qualityRegex = /^q(\d+)$/gi
 			let formatRegex = /^(jpg|png|webp|tiff)$/gi
+			let bwRegex = /^(bw)$/gi
 
 			modifications.forEach((modification) => {
 				modification = __.sanitizePath(modification)
@@ -65,6 +66,9 @@ module.exports = function(options) {
 
 				let isFormat = formatRegex.exec(modification)
 				if(isFormat) modifiers.format = isFormat[1]
+
+				let isBw = bwRegex.exec(modification)
+				if(isBw) modifiers.bw = true
 			})
 
 			log.debug('/i/', 'Got modifiers', modifiers)
@@ -108,6 +112,11 @@ module.exports = function(options) {
 			}
 			if(modifiers.format) {
 				pipeline.toFormat(modifiers.format)
+			}
+			if(modifiers.bw) {
+				pipeline.modulate({
+					saturation: 0
+				})
 			}
 
 			readableStream.pipe(pipeline).pipe(writableStream) 
