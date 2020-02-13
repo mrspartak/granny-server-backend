@@ -98,10 +98,19 @@ function APP(options) {
 		})*/
 
 		/* Assing modules */
-		require(__.path('src/routes/_load'))(initModules);
+		await require(__.path('src/routes/_load'))(initModules);
 
 		return resolve(initModules);
+
+
+
 	});
+
+
+	
 }
+
+
+
 
 module.exports = APP;
