@@ -1,32 +1,31 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 function LModel(options) {
-    return new Promise(async (resolve, reject) => {
-        let {__, config} = options
+	return new Promise(async (resolve, reject) => {
+		let { __, config } = options;
 
-        await mongoose.connect(config.MONGO, {
-            useUnifiedTopology: true, 
-            useNewUrlParser: true, 
-            useCreateIndex: true,
-            keepAliveInitialDelay: 300000
-        })
+		await mongoose.connect(config.MONGO, {
+			useUnifiedTopology: true,
+			useNewUrlParser: true,
+			useCreateIndex: true,
+			keepAliveInitialDelay: 300000,
+		});
 
-        const { User, userRoleDescription } = require(__.path('user', {__dirname: __dirname}))(options)
-        const { Domain } = require(__.path('domain', {__dirname: __dirname}))(options)
-        const { Image } = require(__.path('image', {__dirname: __dirname}))(options)
+		const { User, userRoleDescription } = require(__.path('user', { __dirname: __dirname }))(options);
+		const { Domain } = require(__.path('domain', { __dirname: __dirname }))(options);
+		const { Image } = require(__.path('image', { __dirname: __dirname }))(options);
 
-        let mongo = {
-            User,
-            Domain,
-            Image,
-            desc: {
-                userRoleDescription
-            }
-        }
+		let mongo = {
+			User,
+			Domain,
+			Image,
+			desc: {
+				userRoleDescription,
+			},
+		};
 
-        return resolve(mongo)
-    })
-	
+		return resolve(mongo);
+	});
 }
 
-module.exports = LModel
+module.exports = LModel;

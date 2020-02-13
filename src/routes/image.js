@@ -1,17 +1,17 @@
-const Router = require('express-promise-router')
-const router = new Router()
-const crypto = require('crypto')
-const sharp = require('sharp')
+const Router = require('express-promise-router');
+const router = new Router();
+const crypto = require('crypto');
+const sharp = require('sharp');
 
 module.exports = function(options) {
-	let {config, mongo, minio, log, mdlwr, __, _v} = options
+	let { config, mongo, minio, log, mdlwr, __, _v } = options;
 
-	router.use(mdlwr.MUST_BE_INITIATED)
-	router.use(mdlwr.ACCESS_KEY_SECRET)
+	router.use(mdlwr.MUST_BE_INITIATED);
+	router.use(mdlwr.ACCESS_KEY_SECRET);
 
-	const SUPPORTED_FORMATS = ['jpeg', 'png', 'gif']
+	const SUPPORTED_FORMATS = ['jpeg', 'png', 'gif'];
 
-/* routes */
+	/* routes */
 
 	/**
 	 * @api {post} /image/upload Upload original image
@@ -23,59 +23,62 @@ module.exports = function(options) {
 	 * @apiSuccess {String} firstname Firstname of the User.
 	 */
 	router.post('/upload', async (req, res) => {
-		if(!req.files) {
-			log.debug('/image/upload', 'No file')
-			return res.json({success: false, error: 'no_file_sent'})
+		if (!req.files) {
+			log.debug('/image/upload', 'No file');
+			return res.json({ success: false, error: 'no_file_sent' });
 		}
 
-		if(!req.files.image) {
-			log.debug('/image/upload', 'File obj name', Object.keys(req.files))
-			return res.json({success: false, error: 'file_name_must_be_image'})
+		if (!req.files.image) {
+			log.debug('/image/upload', 'File obj name', Object.keys(req.files));
+			return res.json({ success: false, error: 'file_name_must_be_image' });
 		}
 
-		let domain = req.domain.domain
-		if(!domain) {
-			log.debug('/image/upload', 'No domain found')
-			return res.json({success: false, error: 'cant_find_hostname'})
+		let domain = req.domain.domain;
+		if (!domain) {
+			log.debug('/image/upload', 'No domain found');
+			return res.json({ success: false, error: 'cant_find_hostname' });
 		}
 
-		let file = req.files.image
-		let body = req.body
+		let file = req.files.image;
+		let body = req.body;
 
-		body.path = __.sanitizePath(body.path)
+		body.path = __.sanitizePath(body.path);
 
-		if(!body.path) {
-			log.debug('/image/upload', 'No path provided')
-			return res.json({success: false, error: 'file_path_must_be_provided'})
+		if (!body.path) {
+			log.debug('/image/upload', 'No path provided');
+			return res.json({ success: false, error: 'file_path_must_be_provided' });
 		}
 
-		let width, height
+		let width, height;
 
-		let hashedPath = crypto.createHash('sha256').update(body.path).digest("hex")
-		let hashedPath_splited = hashedPath.match(/.{1,12}/g)
+		let hashedPath = crypto
+			.createHash('sha256')
+			.update(body.path)
+			.digest('hex');
+		let hashedPath_splited = hashedPath.match(/.{1,12}/g);
 
 		try {
 			let image = sharp(file.data, {
-				failOnError: true
-			})
+				failOnError: true,
+			});
 
-			let metadata = await image.metadata()
-			if(SUPPORTED_FORMATS.indexOf(metadata.format) == -1) {
-				log.debug('/image/upload', 'Unsupported format', metadata.format)
-				return res.json({success: false, error: 'unsupported_format'})
+			let metadata = await image.metadata();
+			if (SUPPORTED_FORMATS.indexOf(metadata.format) == -1) {
+				log.debug('/image/upload', 'Unsupported format', metadata.format);
+				return res.json({ success: false, error: 'unsupported_format' });
 			}
 
-			width = metadata.width
-			height = metadata.height
+			width = metadata.width;
+			height = metadata.height;
 
-			let relativeFolderPath = [...hashedPath_splited].join('/')
-			let fileName = `original.${metadata.format}`
-			let relativeFilePath = relativeFolderPath +'/'+ fileName
+			let relativeFolderPath = [...hashedPath_splited].join('/');
+			let fileName = `original.${metadata.format}`;
+			let relativeFilePath = relativeFolderPath + '/' + fileName;
 
-			var [err, etag] = await __.to(minio.putObject(domain, relativeFilePath, file.data))
-			if(err) {
-				log.debug('/image/upload', 'Error uploading to minio', err.message)
-				return res.json({success: false, error: 'error_uploading_image'})
+			var [err, etag] = await __.to(minio.putObject(domain, relativeFilePath, file.data));
+			if (err) {
+				log.debug('/image/upload', 'Error uploading to minio', err.message);
+				return res.json({ success: false, error: 'error_uploading_image' });
 			}
 
 			let toSave = {
@@ -90,42 +93,41 @@ module.exports = function(options) {
 					s3_file: fileName,
 					etag,
 					width,
-					height
+					height,
 				},
 
-				reference: {}
-			}
+				reference: {},
+			};
 
-			let img, imgDB, replaced = false
+			let img,
+				imgDB,
+				replaced = false;
 
-			img = await mongo.Image.findOne({domain: domain, path: body.path}).exec()
-			if(!img) {
-				imgDB = new mongo.Image(toSave)
+			img = await mongo.Image.findOne({ domain: domain, path: body.path }).exec();
+			if (!img) {
+				imgDB = new mongo.Image(toSave);
 			} else {
-				imgDB = Object.assign(img, toSave)
-				replaced = true
+				imgDB = Object.assign(img, toSave);
+				replaced = true;
 			}
 
-			img = await imgDB.save()
+			img = await imgDB.save();
 
-			let imageUrl = `//${domain}/i/${img.path}`
+			let imageUrl = `//${domain}/i/${img.path}`;
 
 			return res.json({
 				success: true,
 				imageUrl,
 				imagePath: img.path,
-				replaced
-			})
-
-		} catch(error) {
-			log.error('/upload', 'try/catch error', error)
-			return res.json({success: false, error: 'cant_compute_file'})
+				replaced,
+			});
+		} catch (error) {
+			log.error('/upload', 'try/catch error', error);
+			return res.json({ success: false, error: 'cant_compute_file' });
 		}
-	})
+	});
 
-	router.post('/edit', async (req, res) => {
-		
-	})
+	router.post('/edit', async (req, res) => {});
 
-	return router
-}
+	return router;
+};
