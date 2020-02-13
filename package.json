@@ -1,48 +1,51 @@
 {
-  "name": "image-api",
-  "version": "0.1.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "cross-env DEBUG=1 nodemon ./index.js",
-    "format": "prettier --write \"src/**/*.js\"",
-    "start": "node ./index.js"
-  },
-  "pre-commit": [
-    "format"
-  ],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5",
-    "express": "^4.17.1",
-    "express-fileupload": "^1.1.6",
-    "express-promise-router": "^3.0.3",
-    "helmet": "^3.21.2",
-    "lodash": "^4.17.15",
-    "minio": "^7.0.13",
-    "moment": "^2.24.0",
-    "mongoose": "^5.8.9",
-    "mongoose-autorefs": "^1.0.5",
-    "mongoose-plugin-autoinc": "^1.1.9",
-    "nano-md5": "^1.0.5",
-    "object-hash": "^2.0.1",
-    "sharp": "^0.24.0"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
-  },
-  "devDependencies": {
-    "cross-env": "^6.0.3",
-    "jest": "^24.9.0",
-    "nodemon": "^2.0.2",
-    "pre-commit": "^1.2.2",
-    "prettier": "1.19.1",
-    "supertest": "^4.0.2"
-  }
+	"name": "image-api",
+	"version": "0.1.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"dev": "cross-env DEBUG=1 nodemon ./index.js",
+		"format": "prettier --write \"src/**/*.js\"",
+		"start": "node ./index.js"
+	},
+	"husky": {
+		"hooks": {
+			"pre-commit": "pretty-quick --staged"
+		}
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"bcryptjs": "^2.4.3",
+		"body-parser": "^1.19.0",
+		"cors": "^2.8.5",
+		"express": "^4.17.1",
+		"express-fileupload": "^1.1.6",
+		"express-promise-router": "^3.0.3",
+		"helmet": "^3.21.2",
+		"lodash": "^4.17.15",
+		"minio": "^7.0.13",
+		"moment": "^2.24.0",
+		"mongoose": "^5.8.9",
+		"mongoose-autorefs": "^1.0.5",
+		"mongoose-plugin-autoinc": "^1.1.9",
+		"nano-md5": "^1.0.5",
+		"object-hash": "^2.0.1",
+		"sharp": "^0.24.0"
+	},
+	"jest": {
+		"testEnvironment": "node",
+		"coveragePathIgnorePatterns": [
+			"/node_modules/"
+		]
+	},
+	"devDependencies": {
+		"cross-env": "^6.0.3",
+		"husky": "^4.2.3",
+		"jest": "^24.9.0",
+		"nodemon": "^2.0.2",
+		"prettier": "1.19.1",
+		"pretty-quick": "^2.0.1",
+		"supertest": "^4.0.2"
+	}
 }

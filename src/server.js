@@ -92,6 +92,9 @@ function APP(options) {
 			})
 		})
 
+
+
+
 		app.use((err, req, res, next) => {
 		    res.status(500)
 		    res.json({success: false, error: 'Server error'})
@@ -101,16 +104,7 @@ function APP(options) {
 		await require(__.path('src/routes/_load'))(initModules);
 
 		return resolve(initModules);
-
-
-
 	});
-
-
-	
 }
-
-
-
 
 module.exports = APP;
