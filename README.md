@@ -1,6 +1,6 @@
 # Simple nodejs CDN server
 
-This app supports uploading, delivering and manipulating images (resizing on fly with cache)
+This app supports uploading, delivering and manipulating images (resizing on the fly with cache)
 
 [![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/assorium/granny-server-backend?style=for-the-badge "Docker Cloud Automated build")](https://hub.docker.com/r/assorium/granny-server-backend "Docker Cloud Automated build")
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/assorium/granny-server-backend?style=for-the-badge "Docker Cloud Build Status")](https://hub.docker.com/r/assorium/granny-server-backend "Docker Cloud Build Status")
@@ -38,4 +38,30 @@ This app supports uploading, delivering and manipulating images (resizing on fly
 docker run -p 3000:3000 --name granny-server-backend \
   -e MONGO='mongodb://user@password:example.com/granny' \
   assorium/granny-server-backend:latest
+```
+
+## Nginx
+This an example Nginx config for all CDN.* subdomains
+All you need is to point your DNS A record to server IP and add domain via API or [granny-server-frontend](https://github.com/mrspartak/granny-server-frontend "granny-server-frontend") app
+This is only an example. I recommend to use real CDN service such as free CloudFlare before your app, and it will serve and cache all your images across the globe.
+```
+server {
+    listen 80;
+    charset UTF-8;
+        
+    server_name cdn.*;
+    
+    client_max_body_size 60m;
+    
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-NginX-Proxy true;
+    }
+}
 ```
