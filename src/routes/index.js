@@ -21,17 +21,30 @@ module.exports = function(options) {
 	});
 
 	/*
+		original image uploaded by path /user/sergio.jpg is avialable at path cdn.example.com/i/user/sergio.jpg
 		modifiers: 
-			divider - /_/, ex cdn.example.com/i/path/to/file.jpg/_/100x100/q50/wepb
+			use divider - /_/, ex cdn.example.com/i/width=100,height=100,format=webp/_/user/sergio.jpg
+			
+			Resize image will be in cover mode. You can provide only one dimension
+			- width: Number
+			- height: Number
+			
+			Progressive image. Supported by jpeg, png
+			- pr: No value
 
-			- resize: 100x100
-			- progressive: pr (supported by jpeg|png)
-			- quality: q50 (from 1 to 100)
-			- format: jpg|png|webp|tiff
-			- black and white: bw
-			- blur: bl or bl_10 (from 1 to 1000 gaussian blur)
+			Quality. Supported by jpeg, png, webp
+			- quality: Number [1-100]
+
+			Format
+			- format: String [jpg|jpeg|png|webp]
+
+			Black and white
+			- bw: No value
+			
+			Blur. Gaussian if number provided
+			- blur: No value or Number [1-1000]
 	*/
-	router.get('/i/:path([a-zA-Z0-9_\\-/.]+)', async (req, res) => {
+	router.get('/i/:path([a-zA-Z0-9_\\-=,/.]+)', async (req, res) => {
 		if (!req.params || !req.params.path) return res.json({ success: false, error: 'request_is_incorrect' });
 
 		let domain = await mongo.Domain.findOne({ domain: req.hostname }).exec();
@@ -40,52 +53,58 @@ module.exports = function(options) {
 			return res.json({ success: false, error: 'request_is_incorrect' });
 		}
 
-		let [path, modifications] = req.params.path.split('/_/');
-		if (!path) return res.json({ success: false, error: 'no_file' });
+		let [modifications, path] = req.params.path.split('/_/');
+		if (!modifications) return res.json({ success: false, error: 'no_file' });
+
+		if (!path) {
+			path = modifications;
+			modifications = '';
+		}
 
 		path = __.sanitizePath(path);
 
+		let extension = path
+			.split('.')
+			.pop()
+			.toLocaleLowerCase();
+		let formatModifier = normalizeFormat(extension);
+
 		let modifiers = {};
 		if (modifications) {
-			modifications = modifications.split('/');
-
-			let resizeRegex = /^(\d+)x(\d+)$/gi;
-			let progressiveRegex = /^pr$/gi;
-			let qualityRegex = /^q(\d+)$/gi;
-			let formatRegex = /^(jpg|png|webp|tiff)$/gi;
-			let bwRegex = /^(bw)$/gi;
-			let blurRegex = /^bl(_\d+)?$/gi;
+			modifications = modifications.split(',');
 
 			modifications.forEach(modification => {
 				modification = __.sanitizePath(modification);
+				let [modKey, modValue] = modification.split('=');
 
-				let isResize = resizeRegex.exec(modification);
-				if (isResize)
-					modifiers.resize = {
-						width: +isResize[1],
-						height: +isResize[2],
-					};
-
-				let isProgressive = progressiveRegex.exec(modification);
-				if (isProgressive) modifiers.progressive = 1;
-
-				let isQuality = qualityRegex.exec(modification);
-				if (isQuality) {
-					let tmpModifier = +isQuality[1];
-					if (tmpModifier >= 1 && tmpModifier <= 100) modifiers.quality = +isQuality[1];
+				if (modKey == 'width' && modValue) {
+					if (!modifiers.resize) modifiers.resize = {};
+					modifiers.resize.width = +modValue;
+				}
+				if (modKey == 'height' && modValue) {
+					if (!modifiers.resize) modifiers.resize = {};
+					modifiers.resize.height = +modValue;
 				}
 
-				let isFormat = formatRegex.exec(modification);
-				if (isFormat) modifiers.format = isFormat[1];
+				if (modKey == 'pr') modifiers.progressive = 1;
 
-				let isBw = bwRegex.exec(modification);
-				if (isBw) modifiers.bw = true;
+				if (modKey == 'quality' && modValue) {
+					modValue = parseInt(modValue);
+					if (modValue >= 1 && modValue <= 100) modifiers.quality = modValue;
+				}
 
-				let isBlur = blurRegex.exec(modification);
-				if (isBlur) {
-					let tmpModifier = isBlur[1] ? +isBlur[1].replace('_', '') : true;
-					if (tmpModifier < 1 || tmpModifier > 1000) tmpModifier = true;
-					modifiers.blur = tmpModifier;
+				if (formatModifier) modifiers.format = formatModifier;
+				if (modKey == 'format' && modValue) {
+					modValue = normalizeFormat(modValue);
+					if (modValue) modifiers.format = modValue;
+				}
+
+				if (modKey == 'bw') modifiers.bw = true;
+
+				if (modKey == 'blur') {
+					modValue = modValue ? parseInt(modValue) : true;
+					if (modValue < 1 || modValue > 1000) modValue = true;
+					modifiers.blur = modValue;
 				}
 			});
 
@@ -128,7 +147,6 @@ module.exports = function(options) {
 				if (img.format == 'jpeg') pipeline.jpeg({ quality: modifiers.quality });
 				if (img.format == 'png') pipeline.png({ quality: modifiers.quality });
 				if (img.format == 'webp') pipeline.webp({ quality: modifiers.quality });
-				if (img.format == 'tiff') pipeline.tiff({ quality: modifiers.quality });
 			}
 			if (modifiers.format) {
 				pipeline.toFormat(modifiers.format);
@@ -177,6 +195,15 @@ module.exports = function(options) {
 			ETag: refImage.etag,
 		});
 		(await minio.getObject(image.domain, `${image.s3_folder}/${refImage.s3_file}`)).pipe(res);
+	}
+
+	function normalizeFormat(input) {
+		let format = false;
+		if (input == 'jpeg' || input == 'jpg') format = 'jpg';
+		if (input == 'png') format = 'png';
+		if (input == 'webp' || input == 'wbp') format = 'webp';
+
+		return format;
 	}
 
 	return router;

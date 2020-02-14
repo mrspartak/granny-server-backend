@@ -9,7 +9,7 @@ module.exports = function(options) {
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_KEY_SECRET);
 
-	const SUPPORTED_FORMATS = ['jpeg', 'png', 'gif'];
+	const SUPPORTED_FORMATS = ['jpeg', 'png', 'webp', 'gif'];
 
 	/* routes */
 
