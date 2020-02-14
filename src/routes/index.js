@@ -26,17 +26,18 @@ module.exports = function(options) {
 			use divider - /_/, ex cdn.example.com/i/width=100,height=100,format=webp/_/user/sergio.jpg
 			
 			Resize image will be in cover mode. You can provide only one dimension
-			- width: Number
-			- height: Number
+			- width || w: Number
+			- height || h: Number
+			- resize || r: String (100x100 || 100)
 			
 			Progressive image. Supported by jpeg, png
-			- pr: No value
+			- progressive || pr: No value
 
 			Quality. Supported by jpeg, png, webp
-			- quality: Number [1-100]
+			- quality || q: Number [1-100]
 
 			Format
-			- format: String [jpg|jpeg|png|webp]
+			- format || f: String [jpg|jpeg|png|webp]
 
 			Black and white
 			- bw: No value
@@ -63,11 +64,11 @@ module.exports = function(options) {
 
 		path = __.sanitizePath(path);
 
-		let extension = path
+		/*let extension = path
 			.split('.')
 			.pop()
 			.toLocaleLowerCase();
-		let formatModifier = normalizeFormat(extension);
+		let formatModifier = normalizeFormat(extension);*/
 
 		let modifiers = {};
 		if (modifications) {
@@ -77,24 +78,42 @@ module.exports = function(options) {
 				modification = __.sanitizePath(modification);
 				let [modKey, modValue] = modification.split('=');
 
-				if (modKey == 'width' && modValue) {
-					if (!modifiers.resize) modifiers.resize = {};
-					modifiers.resize.width = +modValue;
+				if ((modKey == 'width' || modKey == 'w') && modValue) {
+					modValue = parseInt(modValue);
+					if (!isNaN(modValue)) {
+						if (!modifiers.resize) modifiers.resize = {};
+						modifiers.resize.width = modValue;
+					}
 				}
-				if (modKey == 'height' && modValue) {
-					if (!modifiers.resize) modifiers.resize = {};
-					modifiers.resize.height = +modValue;
+				if ((modKey == 'height' || modKey == 'h') && modValue) {
+					modValue = parseInt(modValue);
+					if (!isNaN(modValue)) {
+						if (!modifiers.resize) modifiers.resize = {};
+						modifiers.resize.height = modValue;
+					}
+				}
+				if ((modKey == 'resize' || modKey == 'r') && modValue) {
+					let [rWidth, rHeight] = modValue.split('x');
+					if (!rHeight) rHeight = rWidth;
+					rHeight = parseInt(rHeight);
+					rWidth = parseInt(rWidth);
+					if (!isNaN(rHeight) && !isNaN(rWidth)) {
+						if (!modifiers.resize) modifiers.resize = {};
+
+						if (rWidth) modifiers.resize.width = rWidth;
+						if (rHeight) modifiers.resize.height = rHeight;
+					}
 				}
 
-				if (modKey == 'pr') modifiers.progressive = 1;
+				if (modKey == 'prpgressive' || modKey == 'pr') modifiers.progressive = 1;
 
-				if (modKey == 'quality' && modValue) {
+				if ((modKey == 'quality' || modKey == 'q') && modValue) {
 					modValue = parseInt(modValue);
 					if (modValue >= 1 && modValue <= 100) modifiers.quality = modValue;
 				}
 
-				if (formatModifier) modifiers.format = formatModifier;
-				if (modKey == 'format' && modValue) {
+				//if (formatModifier) modifiers.format = formatModifier;
+				if ((modKey == 'format' || modKey == 'f') && modValue) {
 					modValue = normalizeFormat(modValue);
 					if (modValue) modifiers.format = modValue;
 				}
