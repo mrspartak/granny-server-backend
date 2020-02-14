@@ -4,16 +4,17 @@ const Types = Schema.Types;
 const Model = mongoose.model;
 
 const autoref = require('mongoose-autorefs');
+const uniqueValidator = require('mongoose-unique-validator');
 
 function LModel(options) {
 	let modelSchema = new Schema(
 		{
 			user: { type: Types.ObjectId, ref: 'User' },
-			domain: String,
+			domain: { type: String, index: true, unique: true, required: true},
 
 			settings: Object,
 
-			accessKey: String,
+			accessKey: { type: String, index: true },
 			accessSecret: String,
 		},
 		{
@@ -21,15 +22,7 @@ function LModel(options) {
 		},
 	);
 	modelSchema.plugin(autoref, ['user.domains']);
-
-	modelSchema.index(
-		{
-			domain: 1,
-		},
-		{
-			unique: true,
-		},
-	);
+	modelSchema.plugin(uniqueValidator);
 
 	let Domain = Model('Domain', modelSchema);
 

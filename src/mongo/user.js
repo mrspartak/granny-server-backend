@@ -4,6 +4,7 @@ const Types = Schema.Types;
 const Model = mongoose.model;
 
 const autoref = require('mongoose-autorefs');
+const uniqueValidator = require('mongoose-unique-validator');
 
 function LModel(options) {
 	const userRoleDescription = {
@@ -15,9 +16,9 @@ function LModel(options) {
 
 	let modelSchema = new Schema(
 		{
-			login: String,
+			login: { type: String, index: true, unique: true, required: true },
 			password: String,
-			token: String,
+			token: { type: String, index: true },
 			role: {
 				type: String,
 				enum: Object.keys(userRoleDescription.roles),
@@ -30,6 +31,7 @@ function LModel(options) {
 		},
 	);
 	modelSchema.plugin(autoref, ['domains.user']);
+	modelSchema.plugin(uniqueValidator);
 
 	let User = Model('User', modelSchema);
 
