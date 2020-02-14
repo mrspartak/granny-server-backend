@@ -15,6 +15,32 @@ This app supports uploading, delivering and manipulating images (resizing on the
 [granny-js-client](https://github.com/mrspartak/granny-js-client "granny-js-client") - Client library that works both in nodejs and browser. Makes API calls easier  
 [granny-server-frontend](https://github.com/mrspartak/granny-server-frontend "granny-server-frontend") - Frontend APP that uses client to manage your CDN domains and settings  
 
+## Sample usage
+Let's say tou have new avatar to upload, and you want it to be avialable at path **/users/sergio.jpeg**  
+After you upload an image via API, the image is avialable at path **cdn.example.com/i/users/sergio.jpeg**  
+And now magic begins. Lets modify it! **cdn.example.com/i/height=100,width=100/_/users/sergio.jpeg** is of course resize on fly with cache  
+```
+Resized image will be in cover mode. You can provide only one dimension too
+- width || w: Number
+- height || h: Number
+- resize || r: String (100x100 || 100, 100x200)
+
+Progressive image. Supported by jpeg, png
+- progressive || pr: No value
+
+Quality. Supported by jpeg, png, webp
+- quality || q: Number [1-100]
+
+Format to convert
+- format || f: String [jpg|jpeg|png|webp]
+
+Black and white
+- bw: No value
+
+Blur. Gaussian if number provided
+- blur: No value or Number [1-1000]
+```
+
 ## Requirements
 - **MongoDB**  
 - **Nginx**
