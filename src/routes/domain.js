@@ -49,7 +49,11 @@ module.exports = function(options) {
 			accessKey,
 			accessSecret,
 		});
-		let domain = await item.save();
+		var [err, domain] = await __.to(item.save());
+		if(err) {
+			log.error('/domain/add', 'Mongo error', err.message);
+			return res.json({ success: false, error: 'save_domain_error' });
+		}
 
 		return res.json({ success: true, domain });
 	});
