@@ -17,7 +17,8 @@ module.exports = function(options) {
 
 	/* routes */
 	router.get('/list', async (req, res) => {
-		let domains = (await mongo.Domain.find({ user: req.user._id }).exec()) || [];
+		let query = req.user.role == 'admin' ? {} : { users: req.user._id }
+		let domains = await mongo.Domain.find(query) || [];
 
 		return res.json({ success: true, domains });
 	});
@@ -45,7 +46,7 @@ module.exports = function(options) {
 
 		let item = new mongo.Domain({
 			domain: form.domain,
-			user: req.user._id,
+			users: req.user._id,
 			accessKey,
 			accessSecret,
 		});
@@ -62,7 +63,8 @@ module.exports = function(options) {
 		if (!req.params.domain) return res.json({ success: false, error: 'no_hostname_provided' });
 		req.params.domain = req.params.domain.trim();
 
-		let domain = (await mongo.Domain.findOne({ user: req.user._id, domain: req.params.domain }).exec()) || [];
+		let query = req.user.role == 'admin' ? {domain: req.params.domain} : { users: req.user._id, domain: req.params.domain }
+		let domain = (await mongo.Domain.findOne(query).exec()) || {};
 
 		return res.json({ success: true, domain });
 	});

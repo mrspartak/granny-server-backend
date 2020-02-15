@@ -42,14 +42,20 @@ module.exports = async function(options) {
 		req.user = user;
 		next();
 	};
+	options.mdlwr.ADMIN_ACCESS = async function(req, res, next) {
+		if(!req.user) return res.json({ succes: false, error: 'no_user_found' });
+		if(req.user.role != 'admin') return res.json({ succes: false, error: 'you_must_be_administrator' });
+
+		next()
+	}
 
 	options.mdlwr.ACCESS_KEY_SECRET = async function(req, res, next) {
 		var sign = req.method == 'POST' ? req.body.sign : req.query.sign;
-		log.debug('ACCESS_KEY_SECRET', req.method, req.body, req.query);
+		//log.debug('ACCESS_KEY_SECRET', req.method, req.body, req.query);
 		if (!sign) return res.json({ succes: false, error: 'authorization_required', error_code: 1 });
 
 		var [key, sign] = sign.split('||');
-		log.debug('ACCESS_KEY_SECRET', key, sign);
+		//log.debug('ACCESS_KEY_SECRET', key, sign);
 
 		let domain = await mongo.Domain.findOne({ accessKey: key }).exec();
 		if (!domain) return res.json({ succes: false, error: 'authorization_required', error_code: 2 });

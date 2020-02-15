@@ -9,7 +9,7 @@ const uniqueValidator = require('mongoose-unique-validator');
 function LModel(options) {
 	let modelSchema = new Schema(
 		{
-			user: { type: Types.ObjectId, ref: 'User' },
+			users: [{ type: Types.ObjectId, ref: 'User' }],
 			domain: { type: String, index: true, unique: true, required: true},
 
 			settings: Object,
@@ -21,13 +21,16 @@ function LModel(options) {
 			timestamps: true,
 		},
 	);
-	modelSchema.plugin(autoref, ['user.domains']);
+	modelSchema.plugin(autoref, ['users.domains']);
 	modelSchema.plugin(uniqueValidator);
 
 	let Domain = Model('Domain', modelSchema);
 
 	Domain.domainExists = async function(domain) {
 		return !!(await this.findOne({ domain: domain }).exec());
+	};
+	Domain.domainIdExists = async function(id) {
+		return !!(await this.findById(id).exec());
 	};
 
 	return { Domain };

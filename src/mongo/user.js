@@ -30,7 +30,7 @@ function LModel(options) {
 			timestamps: true,
 		},
 	);
-	modelSchema.plugin(autoref, ['domains.user']);
+	modelSchema.plugin(autoref, ['domains.users']);
 	modelSchema.plugin(uniqueValidator);
 
 	let User = Model('User', modelSchema);
@@ -39,6 +39,10 @@ function LModel(options) {
 		let result = await this.find({ role: 'admin' }).exec();
 		return result.length ? true : false;
 	};
+	User.userExists = async function(login) {
+		return !!(await this.findOne({ login }).exec());
+	};
+
 	User.checkRequestToken = async function(req) {
 		let token = req.headers.authorization || false;
 		if (!token) throw new Error('login_required');
