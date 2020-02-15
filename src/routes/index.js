@@ -54,6 +54,21 @@ module.exports = function(options) {
 			return res.json({ success: false, error: 'request_is_incorrect' });
 		}
 
+		//check referer
+		let referer = req.headers.referrer || req.headers.referer
+		let refererPass = domain.settings.referer.some((refCheck) => {
+			if(refCheck == '*') return true;
+			if(refCheck == '__allow_direct__' && typeof referer == 'undefined') return true;
+
+			let regex = new RegExp( RegExp.escape(refCheck) )
+			return !!regex.exec(referer)
+		})
+
+		if(!refererPass) {
+			log.debug('/i/', 'RefererPass', referer, domain.settings.referer);
+			return res.json({ success: false, error: 'not_allowed_request' });
+		}
+
 		let [modifications, path] = req.params.path.split('/_/');
 		if (!modifications) return res.json({ success: false, error: 'no_file' });
 
@@ -63,12 +78,6 @@ module.exports = function(options) {
 		}
 
 		path = __.sanitizePath(path);
-
-		/*let extension = path
-			.split('.')
-			.pop()
-			.toLocaleLowerCase();
-		let formatModifier = normalizeFormat(extension);*/
 
 		let modifiers = {};
 		if (modifications) {
@@ -186,6 +195,8 @@ module.exports = function(options) {
 			let relativeFilePath = img.s3_folder + '/' + fileName;
 			let etag = await minio.putObject(img.domain, relativeFilePath, writableStream);
 
+			let ttl = domain.settings.ttl ? parseInt(new Date().getTime()/1000) + domain.settings.ttl * 3600 : 0
+
 			if (!img.refChildren) img.refChildren = {};
 			refChildren = {
 				s3_file: fileName,
@@ -195,6 +206,7 @@ module.exports = function(options) {
 				width: modifiers.resize ? modifiers.resize.width : refImage.width,
 				height: modifiers.resize ? modifiers.resize.height : refImage.height,
 				modifications: modImageModifiers,
+				ttl
 			};
 			img.refChildren.push(refChildren);
 

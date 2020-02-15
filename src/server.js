@@ -5,6 +5,8 @@ function APP(options) {
 		const _ = require('lodash');
 		const __ = require('../utils/utils');
 		const _v = require(__.path('utils/validate'));
+		require(__.path('utils/prototypes'));
+
 		const moment = require('moment');
 		moment.locale('ru');
 		const sharp = require('sharp');
@@ -67,11 +69,7 @@ function APP(options) {
 
 		app.use(bodyParser.json())
 			.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }))
-			.use(
-				cors({
-					origin: '*',
-				}),
-			)
+			.use(cors())
 			.use(fileUpload())
 			.use(helmet());
 

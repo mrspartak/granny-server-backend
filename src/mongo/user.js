@@ -42,6 +42,9 @@ function LModel(options) {
 	User.userExists = async function(login) {
 		return !!(await this.findOne({ login }).exec());
 	};
+	User.userIdExists = async function(id) {
+		return !!(await this.findById(id).exec());
+	};
 
 	User.checkRequestToken = async function(req) {
 		let token = req.headers.authorization || false;

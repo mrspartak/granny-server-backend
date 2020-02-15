@@ -25,8 +25,8 @@ function LModel(options) {
 	});
 
 	let childRefImgObjDescription = Object.assign({}, refImgObjDescription, {
-		//modifiers path. ex /_/100x100
-		path: String,
+		//live till ts
+		ttl: {type: Number, default: 0}
 	});
 
 	let modelSchema = new Schema(

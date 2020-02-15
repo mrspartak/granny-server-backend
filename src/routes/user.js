@@ -65,8 +65,6 @@ module.exports = function(options) {
 
 		if (!form.login) return res.json({ success: false, error: 'no_login_provided' });
 		form.login = form.login.trim();
-		if (form.login.length < 6)
-			return res.json({ success: false, error: 'Login must be at least 6 characters long' });
 
 		let user = await mongo.User.findOne({ login: form.login })
 		if(!user)

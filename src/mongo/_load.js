@@ -12,7 +12,7 @@ function LModel(options) {
 		});
 
 		const { User, userRoleDescription } = require(__.path('user', { __dirname: __dirname }))(options);
-		const { Domain } = require(__.path('domain', { __dirname: __dirname }))(options);
+		const { Domain, domainSettingsDescription } = require(__.path('domain', { __dirname: __dirname }))(options);
 		const { Image } = require(__.path('image', { __dirname: __dirname }))(options);
 
 		let mongo = {

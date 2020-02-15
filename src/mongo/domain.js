@@ -7,12 +7,18 @@ const autoref = require('mongoose-autorefs');
 const uniqueValidator = require('mongoose-unique-validator');
 
 function LModel(options) {
+	let domainSettingsDescription = {
+		referer: { type: [ String ], default: [ '*' ]},
+		ttl: { type: Number, default: 0 }
+	}
+
+
 	let modelSchema = new Schema(
 		{
 			users: [{ type: Types.ObjectId, ref: 'User' }],
 			domain: { type: String, index: true, unique: true, required: true},
 
-			settings: Object,
+			settings: domainSettingsDescription,
 
 			accessKey: { type: String, index: true },
 			accessSecret: String,
@@ -33,7 +39,7 @@ function LModel(options) {
 		return !!(await this.findById(id).exec());
 	};
 
-	return { Domain };
+	return { Domain, domainSettingsDescription };
 }
 
 module.exports = LModel;

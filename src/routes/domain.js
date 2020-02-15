@@ -59,6 +59,52 @@ module.exports = function(options) {
 		return res.json({ success: true, domain });
 	});
 
+	router.post('/edit', async (req, res) => {
+		let form = req.body;
+
+		if (!form.domain) return res.json({ success: false, error: 'no_domain_provided' });
+		form.domain = form.domain.trim();
+
+		let domain = await mongo.Domain.findOne({ domain: form.domain })
+		if(!domain)
+			return res.json({ success: false, error: 'no_domain_found' });
+
+		let domainChanged = false
+		if(form.users && Array.isArray(form.users)) {
+			if(form.users.length == 0) {
+				domain.users = []
+				domainChanged = true
+			} else {
+				let usersExist = true
+				await __.asyncForEach(form.users, async (user) => {
+					if(! await mongo.User.userIdExists(user)) usersExist = false
+				})
+				if(usersExist) {
+					domain.users = form.users
+					domainChanged = true
+				}
+			}			
+		}
+
+		if(form.referer && Array.isArray(form.referer) && form.referer.length) {
+			domain.settings.referer = form.referer
+			domainChanged = true
+		}
+
+		if(typeof form.ttl == 'number') {
+			domain.settings.ttl = form.ttl
+			domainChanged = true
+		}
+
+		if(domainChanged) await domain.save();
+
+		res.json({
+			success: true,
+			domainChanged,
+			domain: domain.domain
+		});
+	});
+
 	router.get('/id/:domain', async (req, res) => {
 		if (!req.params.domain) return res.json({ success: false, error: 'no_hostname_provided' });
 		req.params.domain = req.params.domain.trim();
