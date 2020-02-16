@@ -9,9 +9,8 @@ const uniqueValidator = require('mongoose-unique-validator');
 function LModel(options) {
 	let domainSettingsDescription = {
 		referer: { type: [ String ], default: [ '*' ]},
-		ttl: { type: Number, default: 0 }
+		ttl: { type: Number, default: 24 }
 	}
-
 
 	let modelSchema = new Schema(
 		{
