@@ -18,7 +18,7 @@ module.exports = function(options) {
 		path = __.sanitizePath(path);
 		let path_array = path ? path.split('/') : [];
 
-		let findQuery = { domain: req.domain.domain };
+		let findQuery = { domain: req.domain.domain, deleted: {$ne: true} };
 		if (path) findQuery.path = { $regex: new RegExp('^' + path + '/', 'ig') };
 		let groupQuery = {
 			_id: { $arrayElemAt: ['$path_array', path_array.length] },

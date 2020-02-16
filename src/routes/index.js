@@ -65,7 +65,7 @@ module.exports = function(options) {
 		})
 
 		if(!refererPass) {
-			log.debug('/i/', 'RefererPass', referer, domain.settings.referer);
+			log.debug('/i/', '!RefererPass', referer, domain.settings.referer);
 			return res.json({ success: false, error: 'not_allowed_request' });
 		}
 

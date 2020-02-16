@@ -133,7 +133,46 @@ module.exports = function(options) {
 
 	router.post('/edit', async (req, res) => {});
 
-	router.get('/id/', async (req, res) => {});
+	router.post('/delete', async (req, res) => {
+		let body = req.body;
+		if(!body.path) return res.json({ success: false, error: 'no_file' });
+
+		let path = __.sanitizePath(body.path);
+
+		let domain = req.domain.domain;
+		if (!domain) {
+			log.debug('/image/delete', 'No domain found');
+			return res.json({ success: false, error: 'cant_find_hostname' });
+		}
+
+		let image = await mongo.Image.findOne({ domain, path }).exec();
+		if (!image) return res.json({ success: false, error: 'no_file' });
+		if (image.deleted) return res.json({ success: false, error: 'no_file' });
+
+		image.deleted = true
+		await image.save()
+
+		return res.json({ success: true });
+	})
+
+	router.get('/info', async (req, res) => {
+		let body = req.query;
+		if(!body.path) return res.json({ success: false, error: 'no_file' });
+
+		let path = __.sanitizePath(body.path);
+
+		let domain = req.domain.domain;
+		if (!domain) {
+			log.debug('/image/info', 'No domain found');
+			return res.json({ success: false, error: 'cant_find_hostname' });
+		}
+
+		let image = await mongo.Image.findOne({ domain, path }).select('-s3_folder -reference.s3_file -refChildren.s3_file').exec();
+		if (!image) return res.json({ success: false, error: 'no_file' });
+		if (image.deleted) return res.json({ success: false, error: 'no_file' });
+
+		return res.json({ success: true, image });
+	});
 
 	return router;
 };
