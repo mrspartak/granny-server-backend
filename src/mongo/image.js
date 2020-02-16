@@ -9,6 +9,8 @@ function LModel(options) {
 		s3_file: String,
 		//s3 etag
 		etag: String,
+		//s3 size
+		size: Number,
 
 		//image properties
 		width: Number,
@@ -49,6 +51,9 @@ function LModel(options) {
 
 			/* local modifications of ref, made by URL. For example resize 50x50 */
 			refChildren: [childRefImgObjDescription],
+
+			/* mark as deleted for cron to delete image */
+			deleted: { type: Boolean, default: false}
 		},
 		{
 			timestamps: true,

@@ -81,6 +81,9 @@ module.exports = function(options) {
 				return res.json({ success: false, error: 'error_uploading_image' });
 			}
 
+			var [err, stat] = await __.to(minio.statObject(domain, relativeFilePath))
+			if (err) log.debug('/image/upload', 'Minio stat error', err.message);
+
 			let toSave = {
 				domain,
 				format: metadata.format,
@@ -92,6 +95,7 @@ module.exports = function(options) {
 				original: {
 					s3_file: fileName,
 					etag,
+					size: stat.size ? stat.size : 0,
 					width,
 					height,
 				},
@@ -128,6 +132,8 @@ module.exports = function(options) {
 	});
 
 	router.post('/edit', async (req, res) => {});
+
+	router.get('/id/', async (req, res) => {});
 
 	return router;
 };

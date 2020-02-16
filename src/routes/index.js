@@ -141,6 +141,7 @@ module.exports = function(options) {
 
 		let img = await mongo.Image.findOne({ domain: domain.domain, path: path }).exec();
 		if (!img) return res.json({ success: false, error: 'no_file' });
+		if (img.deleted) return res.json({ success: false, error: 'no_file' });
 
 		let refImage = img.reference && img.reference.path ? img.reference : img.original;
 
@@ -189,30 +190,45 @@ module.exports = function(options) {
 				else pipeline.blur(modifiers.blur);
 			}
 
-			readableStream.pipe(pipeline).pipe(writableStream);
-
-			let fileName = `m_${modSign}.${img.format}`;
-			let relativeFilePath = img.s3_folder + '/' + fileName;
-			let etag = await minio.putObject(img.domain, relativeFilePath, writableStream);
-
 			let ttl = domain.settings.ttl ? parseInt(new Date().getTime()/1000) + domain.settings.ttl * 3600 : 0
 
-			if (!img.refChildren) img.refChildren = {};
-			refChildren = {
-				s3_file: fileName,
-				format,
-				etag,
-				hash: modSign,
-				width: modifiers.resize ? modifiers.resize.width : refImage.width,
-				height: modifiers.resize ? modifiers.resize.height : refImage.height,
-				modifications: modImageModifiers,
-				ttl
-			};
-			img.refChildren.push(refChildren);
+			//if do not save modified
+			if(ttl == 0) {
+				log.debug('/i/', 'Skip save. Pipe');
+				res.set({
+					'Content-Type': `image/${format}`
+				});
+				readableStream.pipe(pipeline).pipe(res);
+			} else {
+				log.debug('/i/', 'Saving image');
 
-			img = await img.save();
+				readableStream.pipe(pipeline).pipe(writableStream);
 
-			return sendImage(res, img, refChildren);
+				let fileName = `m_${modSign}.${img.format}`;
+				let relativeFilePath = img.s3_folder + '/' + fileName;
+				let etag = await minio.putObject(img.domain, relativeFilePath, writableStream);
+
+				var [err, stat] = await __.to(minio.statObject(img.domain, relativeFilePath))
+				if (err) log.debug('/i/', 'Minio stat error', err.message);
+
+				if (!img.refChildren) img.refChildren = {};
+				refChildren = {
+					s3_file: fileName,
+					format,
+					size: stat.size ? stat.size : 0,
+					etag,
+					hash: modSign,
+					width: modifiers.resize ? modifiers.resize.width : refImage.width,
+					height: modifiers.resize ? modifiers.resize.height : refImage.height,
+					modifications: modImageModifiers,
+					ttl
+				};
+				img.refChildren.push(refChildren);
+
+				img = await img.save();
+
+				return sendImage(res, img, refChildren);
+			}
 		} catch (err) {
 			log.error('/i/', 'Sharp error', err.message);
 			return res.json({ success: false, error: 'error_modifying' });

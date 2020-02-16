@@ -33,6 +33,15 @@ module.exports = function(options) {
 					],
 				},
 			},
+			originalSize: {
+				$sum: "$original.size"
+			},
+			refSize: {
+				$sum: "$reference.size"
+			},
+			refChildrenSize: {
+				$sum: {$sum: "$refChildren.size"}
+			}
 		};
 
 		let result = await mongo.Image.aggregate([
@@ -49,12 +58,22 @@ module.exports = function(options) {
 			if (pathElement.pathIsFile)
 				structure.push({
 					path: pathElement._id,
+					size: {
+						original: pathElement.originalSize,
+						ref: pathElement.refSize,
+						refChildren: pathElement.refChildrenSize
+					},
 					type: 'file',
 				});
 			if (pathElement.files > pathElement.pathIsFile)
 				structure.push({
 					path: pathElement._id,
 					type: 'folder',
+					size: {
+						original: pathElement.originalSize,
+						ref: pathElement.refSize,
+						refChildren: pathElement.refChildrenSize
+					},
 					items: pathElement.files - pathElement.pathIsFile,
 				});
 		});
