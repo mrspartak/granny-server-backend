@@ -7,6 +7,10 @@ const autoref = require('mongoose-autorefs');
 const uniqueValidator = require('mongoose-unique-validator');
 
 function LModel(options) {
+	let domainAdminSettingsDescription = {
+		maxSize: { type: Number, default: 0 }
+	}
+
 	let domainSettingsDescription = {
 		referer: { type: [ String ], default: [ '*' ]},
 		ttl: { type: Number, default: 24 }
@@ -17,6 +21,7 @@ function LModel(options) {
 			users: [{ type: Types.ObjectId, ref: 'User' }],
 			domain: { type: String, index: true, unique: true, required: true},
 
+			adminSettings: domainAdminSettingsDescription,
 			settings: domainSettingsDescription,
 
 			accessKey: { type: String, index: true },

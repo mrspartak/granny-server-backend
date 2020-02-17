@@ -14,6 +14,10 @@ function LModel(options) {
 		},
 	};
 
+	let userSettingsDescription = {
+		canAddDomains: { type: Boolean, default: false }
+	}
+
 	let modelSchema = new Schema(
 		{
 			login: { type: String, index: true, unique: true, required: true },
@@ -24,6 +28,9 @@ function LModel(options) {
 				enum: Object.keys(userRoleDescription.roles),
 				required: true,
 			},
+
+			settings: userSettingsDescription,
+
 			domains: [{ type: Types.ObjectId, ref: 'Domain' }],
 		},
 		{

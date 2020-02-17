@@ -29,6 +29,9 @@ module.exports = function(options) {
 	router.post('/add', async (req, res) => {
 		let form = req.body;
 
+		if(req.user.role != 'admin' && !req.user.settings.canAddDomain)
+			return res.json({ success: false, error: 'do_not_have_access_to_add_domains' });
+
 		if (!form.domain) return res.json({ success: false, error: 'no_hostname_provided' });
 		form.domain = form.domain.trim();
 		if (!_v.isHostname(form.domain)) return res.json({ success: false, error: 'wrong_hostname_format' });
@@ -69,6 +72,9 @@ module.exports = function(options) {
 		if(!domain)
 			return res.json({ success: false, error: 'no_domain_found' });
 
+		if(req.user.role != 'admin' && domain.users.indexOf(req.user._id) == -1)
+			return res.json({ success: false, error: 'no_access' });
+
 		let domainChanged = false
 		if(form.users && Array.isArray(form.users)) {
 			if(form.users.length == 0) {
@@ -93,6 +99,11 @@ module.exports = function(options) {
 
 		if(typeof form.ttl == 'number') {
 			domain.settings.ttl = form.ttl
+			domainChanged = true
+		}
+
+		if(typeof form.maxSize == 'number' && req.user.role == 'admin') {
+			domain.adminSettings.maxSize = form.maxSize
 			domainChanged = true
 		}
 

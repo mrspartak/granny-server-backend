@@ -106,6 +106,13 @@ module.exports = function(options) {
 			}			
 		}
 
+		if(typeof form.canAddDomains != 'undefined') {
+			form.canAddDomains = !!form.canAddDomains
+
+			user.settings.canAddDomains = form.canAddDomains
+			userChanged = true
+		}
+
 		if(userChanged) await user.save();
 
 		res.json({

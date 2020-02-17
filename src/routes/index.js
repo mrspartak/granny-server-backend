@@ -17,6 +17,7 @@ module.exports = function(options) {
 			auth: user ? true : false,
 			id: config.ID,
 			APP_INITIATED: config.APP_INITIATED,
+			ts: parseInt(new Date().getTime()/1000)
 		});
 	});
 
