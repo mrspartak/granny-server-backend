@@ -6,7 +6,8 @@ This app supports uploading, delivering and manipulating images (resizing on the
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/assorium/granny-server-backend?style=for-the-badge "Docker Cloud Build Status")](https://hub.docker.com/r/assorium/granny-server-backend "Docker Cloud Build Status")
 [![Docker Pulls](https://img.shields.io/docker/pulls/assorium/granny-server-backend?style=for-the-badge "Docker Pulls")](https://hub.docker.com/r/assorium/granny-server-backend "Docker Pulls")  <br/>
 
-[![Latest Github tag](https://img.shields.io/github/v/tag/mrspartak/granny-server-backend?sort=date&style=for-the-badge "Latest Github tag")](https://github.com/mrspartak/granny-server-backend/releases "Latest Github tag")
+[![Latest Github tag](https://img.shields.io/github/v/tag/mrspartak/granny-server-backend?sort=date&style=for-the-badge "Latest Github tag")](https://github.com/mrspartak/granny-server-backend/releases "Latest Github tag") 
+[![Join the chat at https://gitter.im/granny-js/community](https://img.shields.io/gitter/room/granny-js/community?style=for-the-badge)](https://gitter.im/granny-js/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Ecosystem
 ![image](https://user-images.githubusercontent.com/993910/74678258-8f250380-51cb-11ea-9b5e-1640e713380e.PNG)
