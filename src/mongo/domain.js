@@ -26,6 +26,8 @@ function LModel(options) {
 
 			accessKey: { type: String, index: true },
 			accessSecret: String,
+
+			size: { type: Number, default: 0 }
 		},
 		{
 			timestamps: true,

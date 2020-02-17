@@ -57,7 +57,7 @@ function LModel(options) {
 		let token = req.headers.authorization || false;
 		if (!token) throw new Error('login_required');
 
-		let user = await this.findOne({ token: token }).exec();
+		let user = await this.findOne({ token: token }).select('-password -token').exec();
 		if (!user) throw new Error('login_required');
 
 		return user;

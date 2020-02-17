@@ -39,6 +39,12 @@ module.exports = function(options) {
 			return res.json({ success: false, error: 'cant_find_hostname' });
 		}
 
+		if(req.domain.adminSettings.maxSize > 0 && req.domain.adminSettings.maxSize < req.domain.size) {
+			log.debug('/image/upload', 'Domain disk space has run out');
+			return res.json({ success: false, error: 'no_disk_space_for_domain_left' });
+		}
+
+
 		let file = req.files.image;
 		let body = req.body;
 

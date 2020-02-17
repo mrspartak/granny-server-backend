@@ -15,9 +15,20 @@ module.exports = function(options) {
 		res.json({
 			success: true,
 			auth: user ? true : false,
+			role: user ? user.role : false,
 			id: config.ID,
 			APP_INITIATED: config.APP_INITIATED,
 			ts: parseInt(new Date().getTime()/1000)
+		});
+	});
+
+	router.get('/_me', async (req, res) => {
+		config.APP_INITIATED = await mongo.User.adminExists();
+		var [err, user] = await __.to(mongo.User.checkRequestToken(req));
+
+		res.json({
+			success: true,
+			user: user ? user : {}
 		});
 	});
 
