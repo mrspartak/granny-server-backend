@@ -98,7 +98,7 @@ function APP(options) {
 		    res.json({success: false, error: 'Server error'})
 		})*/
 
-		/* Assing modules */
+		/* Routes modules */
 		await require(__.path('src/routes/_load'))(initModules);
 
 		return resolve(initModules);
