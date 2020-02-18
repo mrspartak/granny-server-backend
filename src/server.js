@@ -50,19 +50,13 @@ function APP(options) {
 		/* Minio server */
 		const Minio = require('minio');
 
-		let minioConfig = {
-			endPoint: config.S3_HOST,
-			accessKey: config.S3_ACCESS_KEY,
-			secretKey: config.S3_ACCESS_SECRET,
+		function getMinio({endPoint, accessKey, secretKey, port = false, useSSL = true}) {
+			return new Minio.Client({endPoint, accessKey, secretKey, port, useSSL})
 		}
-		if(config.S3_PORT > 0) minioConfig.port = config.S3_PORT
-		if(config.S3_USESSL) minioConfig.useSSL = true
-
-		const minio = new Minio.Client(minioConfig);
 
 		/* Mongo */
 		const mongo = await require(__.path('src/mongo/_load'))(initModules);
-		_.assign(initModules, { mongo, minio });
+		_.assign(initModules, { mongo, getMinio });
 
 		/* Middleware */
 		const bodyParser = require('body-parser');

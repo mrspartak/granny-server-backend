@@ -3,7 +3,7 @@ const router = new Router();
 const bcrypt = require('bcryptjs');
 
 module.exports = function(options) {
-	let { config, mongo, mdlwr, log, minio, __, _v } = options;
+	let { config, mongo, mdlwr, log, __, _v } = options;
 
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_TOKEN);

@@ -59,6 +59,7 @@ module.exports = async function(options) {
 
 		let domain = await mongo.Domain.findOne({ accessKey: key }).exec();
 		if (!domain) return res.json({ succes: false, error: 'authorization_required', error_code: 2 });
+		if (domain.deleted) return res.json({ succes: false, error: 'domain_will_be_soon_deleted' });
 
 		let signCheck = crypto
 			.createHmac('sha1', domain.accessSecret)

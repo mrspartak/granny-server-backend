@@ -5,7 +5,7 @@ const objHash = require('object-hash');
 const sharp = require('sharp');
 
 module.exports = function(options) {
-	let { config, mongo, minio, __, _, log } = options;
+	let { config, mongo, getMinio, __, _, log } = options;
 
 	/* routes */
 	router.get('/_status', async (req, res) => {
@@ -65,6 +65,9 @@ module.exports = function(options) {
 			log.debug('/i/', 'Not found domain', req.hostname);
 			return res.json({ success: false, error: 'request_is_incorrect' });
 		}
+		if (domain.deleted) return res.json({ success: false, error: 'no_file' });
+		
+		let minio = getMinio(domain.s3)
 
 		//check referer
 		let referer = req.headers.referrer || req.headers.referer
@@ -157,7 +160,7 @@ module.exports = function(options) {
 
 		let refImage = img.reference && img.reference.path ? img.reference : img.original;
 
-		if (_.isEmpty(modifiers)) return sendImage(res, img, refImage);
+		if (_.isEmpty(modifiers)) return sendImage(res, img, refImage, domain.s3.bucket, minio);
 
 		let modImageModifiers = Object.assign({}, refImage.modifications, modifiers);
 		let modSign = objHash.MD5(modImageModifiers);
@@ -167,13 +170,13 @@ module.exports = function(options) {
 		});
 		if (refChildren) {
 			log.debug('/i/', 'Serving already modified image', modSign);
-			return sendImage(res, img, refChildren);
+			return sendImage(res, img, refChildren, domain.s3.bucket, minio);
 		}
 
 		try {
 			log.debug('/i/', 'Modified image not found. Computing');
 
-			let readableStream = await minio.getObject(img.domain, `${img.s3_folder}/${refImage.s3_file}`);
+			let readableStream = await minio.getObject(domain.s3.bucket, `${img.s3_folder}/${refImage.s3_file}`);
 			let writableStream = new stream.PassThrough();
 
 			let format = modifiers.format ? modifiers.format : refImage.format ? refImage.format : img.format;
@@ -218,9 +221,9 @@ module.exports = function(options) {
 
 				let fileName = `m_${modSign}.${img.format}`;
 				let relativeFilePath = img.s3_folder + '/' + fileName;
-				let etag = await minio.putObject(img.domain, relativeFilePath, writableStream);
+				let etag = await minio.putObject(domain.s3.bucket, relativeFilePath, writableStream);
 
-				var [err, stat] = await __.to(minio.statObject(img.domain, relativeFilePath))
+				var [err, stat] = await __.to(minio.statObject(domain.s3.bucket, relativeFilePath))
 				if (err) log.debug('/i/', 'Minio stat error', err.message);
 
 				if (!img.refChildren) img.refChildren = {};
@@ -239,7 +242,7 @@ module.exports = function(options) {
 
 				img = await img.save();
 
-				return sendImage(res, img, refChildren);
+				return sendImage(res, img, refChildren, domain.s3.bucket, minio);
 			}
 		} catch (err) {
 			log.error('/i/', 'Sharp error', err.message);
@@ -247,13 +250,13 @@ module.exports = function(options) {
 		}
 	});
 
-	async function sendImage(res, image, refImage) {
+	async function sendImage(res, image, refImage, bucket, minio) {
 		let format = refImage.format ? refImage.format : image.format;
 		res.set({
 			'Content-Type': `image/${format}`,
 			ETag: refImage.etag,
 		});
-		(await minio.getObject(image.domain, `${image.s3_folder}/${refImage.s3_file}`)).pipe(res);
+		(await minio.getObject(bucket, `${image.s3_folder}/${refImage.s3_file}`)).pipe(res);
 	}
 
 	function normalizeFormat(input) {

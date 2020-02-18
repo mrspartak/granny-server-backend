@@ -2,7 +2,7 @@ const Router = require('express-promise-router');
 const router = new Router();
 
 module.exports = function(options) {
-	let { config, mongo, mdlwr, log, minio, __, _v } = options;
+	let { config, mongo, mdlwr, log, getMinio, __, _v } = options;
 
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_TOKEN);
@@ -17,7 +17,7 @@ module.exports = function(options) {
 
 	/* routes */
 	router.get('/list', async (req, res) => {
-		let query = req.user.role == 'admin' ? {} : { users: req.user._id }
+		let query = req.user.role == 'admin' ? { deleted: {$ne: true} } : { users: req.user._id, deleted: {$ne: true} }
 		let domains = await mongo.Domain.find(query) || [];
 
 		return res.json({ success: true, domains });
@@ -41,15 +41,48 @@ module.exports = function(options) {
 		let accessKey = await getAccessKey();
 		let accessSecret = await getAccessSecret();
 
-		var [err] = await __.to(minio.makeBucket(form.domain));
-		if (err) {
-			log.debug('/domain/add', 'Minio error', err.message);
-			return res.json({ success: false, error: 'hostname_create_storage_error' });
+		if(!form.s3) return res.json({ success: false, error: 'no_s3_settings' });
+
+		let s3Config = {}
+		s3Config.endPoint = form.s3.endPoint ? form.s3.endPoint : config.S3_HOST
+		s3Config.accessKey = form.s3.accessKey ? form.s3.accessKey : config.S3_ACCESS_KEY
+		s3Config.secretKey = form.s3.secretKey ? form.s3.secretKey : config.S3_ACCESS_SECRET
+
+		s3Config.port = typeof form.s3.port != 'undefined' ? form.s3.port : config.S3_PORT
+		if(!s3Config.port) delete s3Config.port
+		s3Config.useSSL = form.s3.useSSL ? form.s3.useSSL : config.S3_USESSL
+
+		if(!s3Config.endPoint) 
+			return res.json({ success: false, error: 's3_endPoint_must_be_send' });
+		if(!s3Config.accessKey) 
+			return res.json({ success: false, error: 's3_accessKey_must_be_send' });
+		if(!s3Config.secretKey) 
+			return res.json({ success: false, error: 's3_secretKey_must_be_send' });
+
+		let minio = getMinio(s3Config)
+		s3Config.bucket = form.bucket ? form.bucket : form.domain
+
+		if(form.createBucket) {
+			var [err] = await __.to(minio.makeBucket(s3Config.bucket));
+			if (err) {
+				log.debug('/domain/add', 'S3 error', err.message);
+				return res.json({ success: false, error: 'create_bucket_error', description: err.message });
+			}
+		} else {
+			var [err, exists] = await __.to(minio.bucketExists(s3Config.bucket));
+			if (err) {
+				log.debug('/domain/add', 'S3 error', err.message);
+				return res.json({ success: false, error: 'check_bucket_error', description: err.message });
+			}
+			if(!exists)
+				return res.json({ success: false, error: 'bucket_not_exists_error' });
 		}
+
 
 		let item = new mongo.Domain({
 			domain: form.domain,
 			users: req.user._id,
+			s3: s3Config,
 			accessKey,
 			accessSecret,
 		});
@@ -68,7 +101,7 @@ module.exports = function(options) {
 		if (!form.domain) return res.json({ success: false, error: 'no_domain_provided' });
 		form.domain = form.domain.trim();
 
-		let domain = await mongo.Domain.findOne({ domain: form.domain })
+		let domain = await mongo.Domain.findOne({ domain: form.domain, deleted: {$ne: true} })
 		if(!domain)
 			return res.json({ success: false, error: 'no_domain_found' });
 
@@ -120,11 +153,26 @@ module.exports = function(options) {
 		if (!req.params.domain) return res.json({ success: false, error: 'no_hostname_provided' });
 		req.params.domain = req.params.domain.trim();
 
-		let query = req.user.role == 'admin' ? {domain: req.params.domain} : { users: req.user._id, domain: req.params.domain }
+		let query = req.user.role == 'admin' ? {domain: req.params.domain, deleted: {$ne: true}} : { users: req.user._id, domain: req.params.domain, deleted: {$ne: true} }
 		let domain = (await mongo.Domain.findOne(query).exec()) || {};
 
 		return res.json({ success: true, domain });
 	});
+
+	router.post('/delete/:domain', async (req, res) => {
+		if (!req.params.domain) return res.json({ success: false, error: 'no_hostname_provided' });
+		req.params.domain = req.params.domain.trim();
+
+		let query = req.user.role == 'admin' ? {domain: req.params.domain} : { users: req.user._id, domain: req.params.domain }
+		let domain = (await mongo.Domain.findOne(query).exec()) || {};
+		if (!domain) return res.json({ success: false, error: 'no_domain' });
+		if (domain.deleted) return res.json({ success: false, error: 'no_domain' });
+
+		domain.deleted = true
+		await domain.save()
+
+		return res.json({ success: true });
+	})
 
 	return router;
 };

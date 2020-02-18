@@ -21,13 +21,24 @@ function LModel(options) {
 			users: [{ type: Types.ObjectId, ref: 'User' }],
 			domain: { type: String, index: true, unique: true, required: true},
 
+			s3: {
+				endPoint: { type: String, required: true },
+				port: { type: Types.Mixed, default: false },
+				accessKey: { type: String, required: true },
+				secretKey: { type: String, required: true },
+				useSSL: { type: Boolean, default: true },
+				bucket: { type: String, required: true }
+			},
+
 			adminSettings: domainAdminSettingsDescription,
 			settings: domainSettingsDescription,
 
 			accessKey: { type: String, index: true },
 			accessSecret: String,
 
-			size: { type: Number, default: 0 }
+			size: { type: Number, default: 0 },
+
+			deleted: { type: Boolean, default: false }
 		},
 		{
 			timestamps: true,

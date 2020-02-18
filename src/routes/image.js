@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const sharp = require('sharp');
 
 module.exports = function(options) {
-	let { config, mongo, minio, log, mdlwr, __, _v } = options;
+	let { config, mongo, getMinio, log, mdlwr, __, _v } = options;
 
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_KEY_SECRET);
@@ -33,13 +33,15 @@ module.exports = function(options) {
 			return res.json({ success: false, error: 'file_name_must_be_image' });
 		}
 
-		let domain = req.domain.domain;
+		let domain = req.domain;
+		let domainName = domain.domain
+
 		if (!domain) {
 			log.debug('/image/upload', 'No domain found');
 			return res.json({ success: false, error: 'cant_find_hostname' });
 		}
 
-		if(req.domain.adminSettings.maxSize > 0 && req.domain.adminSettings.maxSize < req.domain.size) {
+		if(domain.adminSettings.maxSize > 0 && domain.adminSettings.maxSize < domain.size) {
 			log.debug('/image/upload', 'Domain disk space has run out');
 			return res.json({ success: false, error: 'no_disk_space_for_domain_left' });
 		}
@@ -81,17 +83,19 @@ module.exports = function(options) {
 			let fileName = `original.${metadata.format}`;
 			let relativeFilePath = relativeFolderPath + '/' + fileName;
 
-			var [err, etag] = await __.to(minio.putObject(domain, relativeFilePath, file.data));
+			let minio = getMinio(domain.s3)
+
+			var [err, etag] = await __.to(minio.putObject(domain.s3.bucket, relativeFilePath, file.data));
 			if (err) {
 				log.debug('/image/upload', 'Error uploading to minio', err.message);
 				return res.json({ success: false, error: 'error_uploading_image' });
 			}
 
-			var [err, stat] = await __.to(minio.statObject(domain, relativeFilePath))
+			var [err, stat] = await __.to(minio.statObject(domain.s3.bucket, relativeFilePath))
 			if (err) log.debug('/image/upload', 'Minio stat error', err.message);
 
 			let toSave = {
-				domain,
+				domain: domainName,
 				format: metadata.format,
 
 				path: body.path,
@@ -113,7 +117,7 @@ module.exports = function(options) {
 				imgDB,
 				replaced = false;
 
-			img = await mongo.Image.findOne({ domain: domain, path: body.path }).exec();
+			img = await mongo.Image.findOne({ domain: domainName, path: body.path }).exec();
 			if (!img) {
 				imgDB = new mongo.Image(toSave);
 			} else {
@@ -123,7 +127,7 @@ module.exports = function(options) {
 
 			img = await imgDB.save();
 
-			let imageUrl = `//${domain}/i/${img.path}`;
+			let imageUrl = `//${domainName}/i/${img.path}`;
 
 			return res.json({
 				success: true,
