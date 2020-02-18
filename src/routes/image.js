@@ -111,6 +111,7 @@ module.exports = function(options) {
 				},
 
 				reference: {},
+				deleted: false
 			};
 
 			let img,

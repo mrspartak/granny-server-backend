@@ -77,6 +77,7 @@ exports.trim = function(string, char) {
 }
 
 exports.sanitizePath = function(path) {
+	path = decodeURI(path)
 	path = path.trim()
 	path = path.replace(/\/+/, '/')
 	path = exports.trim(path, '/')

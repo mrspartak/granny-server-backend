@@ -57,8 +57,8 @@ module.exports = function(options) {
 			Blur. Gaussian if number provided
 			- blur: No value or Number [1-1000]
 	*/
-	router.get('/i/:path([a-zA-Z0-9_\\-=,/.]+)', async (req, res) => {
-		if (!req.params || !req.params.path) return res.json({ success: false, error: 'request_is_incorrect' });
+	router.get(/^\/i\/(.*)$/, async (req, res) => {
+		if (!req.params || !req.params[0]) return res.json({ success: false, error: 'request_is_incorrect' });
 
 		let domain = await mongo.Domain.findOne({ domain: req.hostname }).exec();
 		if (!domain) {
@@ -84,7 +84,7 @@ module.exports = function(options) {
 			return res.json({ success: false, error: 'not_allowed_request' });
 		}
 
-		let [modifications, path] = req.params.path.split('/_/');
+		let [modifications, path] = req.params[0].split('/_/');
 		if (!modifications) return res.json({ success: false, error: 'no_file' });
 
 		if (!path) {
