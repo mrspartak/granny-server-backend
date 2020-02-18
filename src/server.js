@@ -23,6 +23,7 @@ function APP(options) {
 
 			S3_HOST: process.env.S3_HOST || '127.0.0.1',
 			S3_PORT: process.env.S3_PORT || 9000,
+			S3_USESSL: process.env.S3_USESSL || false,
 		};
 		if (process.env.S3_ACCESS_KEY) config.S3_ACCESS_KEY = process.env.S3_ACCESS_KEY;
 		else if (process.env.S3_ACCESS_KEY_FILE)
@@ -49,13 +50,15 @@ function APP(options) {
 		/* Minio server */
 		const Minio = require('minio');
 
-		const minio = new Minio.Client({
+		let minioConfig = {
 			endPoint: config.S3_HOST,
-			port: config.S3_PORT,
-			useSSL: false,
 			accessKey: config.S3_ACCESS_KEY,
 			secretKey: config.S3_ACCESS_SECRET,
-		});
+		}
+		if(config.S3_PORT > 0) minioConfig.port = config.S3_PORT
+		if(config.S3_USESSL) minioConfig.useSSL = true
+
+		const minio = new Minio.Client(minioConfig);
 
 		/* Mongo */
 		const mongo = await require(__.path('src/mongo/_load'))(initModules);
