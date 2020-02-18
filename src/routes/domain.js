@@ -44,13 +44,23 @@ module.exports = function(options) {
 		if(!form.s3) return res.json({ success: false, error: 'no_s3_settings' });
 
 		let s3Config = {}
-		s3Config.endPoint = form.s3.endPoint ? form.s3.endPoint : config.S3_HOST
-		s3Config.accessKey = form.s3.accessKey ? form.s3.accessKey : config.S3_ACCESS_KEY
-		s3Config.secretKey = form.s3.secretKey ? form.s3.secretKey : config.S3_ACCESS_SECRET
-
-		s3Config.port = typeof form.s3.port != 'undefined' ? form.s3.port : config.S3_PORT
-		if(!s3Config.port) delete s3Config.port
-		s3Config.useSSL = form.s3.useSSL ? form.s3.useSSL : config.S3_USESSL
+		if(form.s3.endPoint) {
+			s3Config = {
+				endPoint: form.s3.endPoint,
+				accessKey: form.s3.accessKey,
+				secretKey: form.s3.secretKey,
+				useSSL: !!form.s3.useSSL,
+				port: form.s3.port
+			}
+		} else {
+			s3Config = {
+				endPoint: config.S3_HOST,
+				accessKey: config.S3_ACCESS_KEY,
+				secretKey: config.S3_ACCESS_SECRET,
+				useSSL: !!config.S3_USESSL,
+				port: config.S3_PORT
+			}
+		}
 
 		if(!s3Config.endPoint) 
 			return res.json({ success: false, error: 's3_endPoint_must_be_send' });

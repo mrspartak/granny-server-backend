@@ -51,7 +51,9 @@ function APP(options) {
 		const Minio = require('minio');
 
 		function getMinio({endPoint, accessKey, secretKey, port = false, useSSL = true}) {
-			return new Minio.Client({endPoint, accessKey, secretKey, port, useSSL})
+			let config = {endPoint, accessKey, secretKey, port, useSSL}
+			if(!config.port) delete config.port;
+			return new Minio.Client(config)
 		}
 
 		/* Mongo */
