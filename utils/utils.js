@@ -77,11 +77,16 @@ exports.trim = function(string, char) {
 }
 
 exports.sanitizePath = function(path) {
-	path = decodeURI(path)
-	path = path.trim()
-	path = path.replace(/\/+/, '/')
-	path = exports.trim(path, '/')
-	return exports.trim(path, '\\')
+	try {
+		path = decodeURI(path)
+		path = path.trim()
+		path = path.replace(/\/+/, '/')
+		path = exports.trim(path, '/')
+		return exports.trim(path, '\\')
+	} catch (e) {
+		console.error('sanitizePath', e.message)
+		return false
+	}
 }
 
 
