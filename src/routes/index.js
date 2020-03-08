@@ -65,7 +65,7 @@ module.exports = function(options) {
 			log.debug('/i/', 'Not found domain', req.hostname);
 			return res.json({ success: false, error: 'request_is_incorrect' });
 		}
-		if (domain.deleted) return res.json({ success: false, error: 'no_file' });
+		if (domain.deleted) return res.json({ success: false, error: 'domain_deleted' });
 		
 		let minio = getMinio(domain.s3)
 
@@ -85,7 +85,7 @@ module.exports = function(options) {
 		}
 
 		let [modifications, path] = req.params[0].split('/_/');
-		if (!modifications) return res.json({ success: false, error: 'no_file' });
+		if (!modifications) return res.json({ success: false, error: 'no_file_path' });
 
 		if (!path) {
 			path = modifications;
@@ -155,8 +155,8 @@ module.exports = function(options) {
 		}
 
 		let img = await mongo.Image.findOne({ domain: domain.domain, path: path }).exec();
-		if (!img) return res.json({ success: false, error: 'no_file' });
-		if (img.deleted) return res.json({ success: false, error: 'no_file' });
+		if (!img) return res.json({ success: false, error: 'no_file_found' });
+		if (img.deleted) return res.json({ success: false, error: 'image_deleted' });
 
 		let refImage = img.reference && img.reference.path ? img.reference : img.original;
 
