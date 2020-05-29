@@ -42,7 +42,7 @@
 	},
 	"devDependencies": {
 		"cross-env": "^6.0.3",
-		"husky": "^4.2.3",
+		"husky": "^4.2.5",
 		"jest": "^26.0.1",
 		"nodemon": "^2.0.4",
 		"prettier": "1.19.1",
