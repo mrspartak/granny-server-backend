@@ -41,11 +41,11 @@
 		]
 	},
 	"devDependencies": {
-		"cross-env": "^6.0.3",
 		"husky": "^4.2.5",
+		"cross-env": "^7.0.2",
 		"jest": "^26.0.1",
+		"prettier": "2.0.5",
 		"nodemon": "^2.0.4",
-		"prettier": "1.19.1",
 		"pretty-quick": "^2.0.1",
 		"supertest": "^4.0.2"
 	}
