@@ -22,7 +22,7 @@
 		"express": "^4.17.1",
 		"express-fileupload": "^1.1.6",
 		"express-promise-router": "^3.0.3",
-		"helmet": "^3.21.2",
+		"helmet": "^3.22.0",
 		"lodash": "^4.17.15",
 		"minio": "^7.0.13",
 		"mongoose": "^5.9.16",
