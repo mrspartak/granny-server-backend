@@ -1,78 +1,38 @@
-const moment = require('moment')
+const winston = require('winston');
+const ApexLogsTransport = require('apex-logs-winston')
 
-function log(options) {
-	this.options = Object.assign({}, {
-		prefix: false,
-		level: 'info',
-		dateformat: 'DD.MM | HH:mm:ss |'
-	}, options)
+function init({ config }) {
+	let level = 'info';
+	if (config.ENV == 'development') level = 'debug';
 
-	const LEVEL_HIERARCHY = {
-		debug: 10,
-		info: 20,
-		warn: 30,
-		error: 40
+	const logger = winston.createLogger({
+		level,
+		format: winston.format.combine(
+			winston.format.timestamp({
+				format: 'DD.MM.YY HH:mm:ss',
+			}),
+			winston.format.json(),
+		),
+		defaultMeta: config.DEFAULT_META
+	});
+
+	logger.add(
+		new winston.transports.Console({
+			format: winston.format.combine(winston.format.simple()),
+		}),
+	);
+
+	if (config.ENV == 'production' && config.APEX_LOGS_URL) {
+		logger.add(
+			new ApexLogsTransport({
+				url: config.APEX_LOGS_URL,
+				authToken: config.APEX_LOGS_AUTH_TOKEN,
+				projectId: config.APEX_LOGS_PROJECT_ID
+			})
+		);
 	}
-	this._checkLevel = function(level) {
-		return LEVEL_HIERARCHY[level] >= LEVEL_HIERARCHY[this.options.level]
-	}
-	this._ts = function() {
-		return moment().format(this.options.dateformat)
-	}
-
-	if(!LEVEL_HIERARCHY[this.options.level]) throw new Error('level does not supported')
-
-
-	this.debug = function() {
-		if(!this._checkLevel('debug')) return;
-
-		let args = Array.from(arguments)
-		
-		let prefixes = [this._ts(), 'DEBUG |']
-		if(this.options.prefix) prefixes.push(this.options.prefix)
-		args.unshift(...prefixes)
-
-		console.debug.apply(console, args)
-	}
-
-	this.info = function() {
-		if(!this._checkLevel('info')) return;
-
-		let args = Array.from(arguments)
-		
-		let prefixes = [this._ts(), 'INFO |']
-		if(this.options.prefix) prefixes.push(this.options.prefix)
-		args.unshift(...prefixes)
-
-		console.info.apply(console, args)
-	}
-
-	this.warn = function() {
-		if(!this._checkLevel('warn')) return;
-
-		let args = Array.from(arguments)
-		
-		let prefixes = [this._ts(), 'WARN |']
-		if(this.options.prefix) prefixes.push(this.options.prefix)
-		args.unshift(...prefixes)
-
-		console.warn.apply(console, args)
-	}
-
-	this.error = function() {
-		if(!this._checkLevel('error')) return;
-
-		let args = Array.from(arguments)
-		
-		let prefixes = [this._ts(), 'ERROR |']
-		if(this.options.prefix) prefixes.push(this.options.prefix)
-		args.unshift(...prefixes)
-
-		console.error.apply(console, args)
-	}
-
-
-	return this
+	
+	return logger;
 }
 
-module.exports = log
+module.exports = init;

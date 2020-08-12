@@ -5,7 +5,10 @@ module.exports = async function(options) {
 
 	//initiating app
 	config.APP_INITIATED = await mongo.User.adminExists();
-	log.info('APP_INITIATED', config.APP_INITIATED);
+
+	const logger = log.child({ place: 'routes/load' });
+
+	logger.info(`APP_INITIATED=${config.APP_INITIATED}`);
 
 	//middleware
 	options.mdlwr = {};
@@ -37,7 +40,10 @@ module.exports = async function(options) {
 
 	options.mdlwr.ACCESS_TOKEN = async function(req, res, next) {
 		var [err, user] = await __.to(mongo.User.checkRequestToken(req));
-		if (err) return res.json({ succes: false, error: err.message });
+		if (err) {
+			logger.error({message: err.message, breakpoint: 'mdlwr.ACCESS_TOKEN'});
+			return res.json({ succes: false, error: err.message });
+		}
 
 		req.user = user;
 		next();
@@ -83,7 +89,9 @@ module.exports = async function(options) {
 		options.moduleName = module.name;
 		if (module.name == 'index') module.name = '';
 
-		app.use('/' + module.name, require(module.path)(options));
+		let routeLogger = log.child({ place: `routes/${module.name}` });
+
+		app.use('/' + module.name, require(module.path)(options, { log: routeLogger }));
 	});
 
 	return app;

@@ -2,7 +2,7 @@ const Router = require('express-promise-router');
 const router = new Router();
 
 module.exports = function(options) {
-	let { config, mongo, mdlwr, log, __, _v } = options;
+	let { mongo, mdlwr, __ } = options;
 
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_KEY_SECRET);

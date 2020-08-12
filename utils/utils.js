@@ -134,3 +134,12 @@ exports.uniqueIDv2 = function(length) {
 exports.regExpEscape = function(str) {
     return str.replace(/[-[\]{}()*+!<=:?.\/\\^$|#\s,]/g, '\\$&');
 }
+
+//bench
+
+exports.benchStart = function () {
+	let tsStart = new Date().getTime();
+	return function () {
+		return parseFloat( ((new Date().getTime() - tsStart) / 1000).toFixed(2) );
+	}
+}

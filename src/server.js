@@ -1,5 +1,7 @@
 function APP(options) {
 	return new Promise(async (resolve, reject) => {
+		require('dotenv').config();
+		
 		const express = require('express');
 		const app = express();
 		const _ = require('lodash');
@@ -15,8 +17,10 @@ function APP(options) {
 
 		/* Config from env */
 		const config = {
-			APP_PORT: process.env.APP_PORT || 3000,
 			DEBUG: process.env.DEBUG || false,
+			ENV: process.env.ENV || 'development',
+
+			APP_PORT: process.env.APP_PORT || 3000,
 			MONGO: process.env.MONGO || 'mongodb://localhost/js_cdn',
 			ID: (await __.uniqueIDv2(2)).toLocaleUpperCase(),
 			APP_INITIATED: false,
@@ -24,7 +28,16 @@ function APP(options) {
 			S3_HOST: process.env.S3_HOST || '127.0.0.1',
 			S3_PORT: process.env.S3_PORT || 9000,
 			S3_USESSL: process.env.S3_USESSL || false,
+
+			APEX_LOGS_URL: process.env.APEX_LOGS_URL,
+			APEX_LOGS_AUTH_TOKEN: process.env.APEX_LOGS_AUTH_TOKEN,
+			APEX_LOGS_PROJECT_ID: process.env.APEX_LOGS_PROJECT_ID,
 		};
+		config.DEFAULT_META = {
+			service: 'api',
+			taskID: `#${config.ID}`,
+			server: process.env.SERVER_HOSTNAME
+		}
 		if (process.env.S3_ACCESS_KEY) config.S3_ACCESS_KEY = process.env.S3_ACCESS_KEY;
 		else if (process.env.S3_ACCESS_KEY_FILE)
 			config.S3_ACCESS_KEY = (await fs.readFile('/run/secrets/' + process.env.S3_ACCESS_KEY_FILE)).toString();
@@ -39,10 +52,10 @@ function APP(options) {
 
 		/* Logger */
 		const log = require(__.path('utils/log'))({
-			prefix: '#' + config.ID + ' |',
-			level: config.DEBUG ? 'debug' : 'info',
+			config
 		});
-		log.info('START CONST', config);
+		const logger = log.child({ place: 'server.js' });
+		logger.debug({ message: 'initialization: config, log' });
 
 		/* Initial modules pool */
 		const initModules = { __, _v, _, log, moment, sharp, md5, config };
@@ -59,6 +72,7 @@ function APP(options) {
 		/* Mongo */
 		const mongo = await require(__.path('src/mongo/_load'))(initModules);
 		_.assign(initModules, { mongo, getMinio });
+		logger.debug({ message: 'initialization: minio, mongo' });
 
 		/* Middleware */
 		const bodyParser = require('body-parser');
@@ -73,12 +87,13 @@ function APP(options) {
 			.use(helmet());
 
 		app.use((req, res, next) => {
-			log.debug(req.method + ' | ' + req.path);
+			logger.info({ breakpoint: 'http.request', message: `${req.method} ${req.path}`, path: req.path, method: req.method, request: `${req.method} ${req.path}`});
 			next();
 		});
 
 		/* Whole modules pool */
 		_.assign(initModules, { app });
+		logger.debug({ message: 'initialization: express' });
 
 		/* Not found and error processing */
 		/*app.use((req, res) => {
@@ -89,9 +104,6 @@ function APP(options) {
 			})
 		})
 
-
-
-
 		app.use((err, req, res, next) => {
 		    res.status(500)
 		    res.json({success: false, error: 'Server error'})
@@ -99,6 +111,7 @@ function APP(options) {
 
 		/* Routes modules */
 		await require(__.path('src/routes/_load'))(initModules);
+		logger.debug({ message: 'initialization: routes' });
 
 		return resolve(initModules);
 	});

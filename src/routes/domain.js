@@ -1,8 +1,8 @@
 const Router = require('express-promise-router');
 const router = new Router();
 
-module.exports = function(options) {
-	let { config, mongo, mdlwr, log, getMinio, __, _v } = options;
+module.exports = function(options, { log }) {
+	let { config, mongo, mdlwr,  getMinio, __, _v } = options;
 
 	router.use(mdlwr.MUST_BE_INITIATED);
 	router.use(mdlwr.ACCESS_TOKEN);
@@ -75,13 +75,13 @@ module.exports = function(options) {
 		if(form.createBucket) {
 			var [err] = await __.to(minio.makeBucket(s3Config.bucket));
 			if (err) {
-				log.debug('/domain/add', 'S3 error', err.message);
+				log.error({ path: req.path, breakpoint: 'minio.makeBucket', message: err.message });
 				return res.json({ success: false, error: 'create_bucket_error', description: err.message });
 			}
 		} else {
 			var [err, exists] = await __.to(minio.bucketExists(s3Config.bucket));
 			if (err) {
-				log.debug('/domain/add', 'S3 error', err.message);
+				log.error({ path: req.path, breakpoint: 'minio.bucketExists', message: err.message });
 				return res.json({ success: false, error: 'check_bucket_error', description: err.message });
 			}
 			if(!exists)
@@ -98,7 +98,7 @@ module.exports = function(options) {
 		});
 		var [err, domain] = await __.to(item.save());
 		if(err) {
-			log.error('/domain/add', 'Mongo error', err.message);
+			log.error({ path: req.path, breakpoint: 'domain.save', message: err.message });
 			return res.json({ success: false, error: 'save_domain_error' });
 		}
 

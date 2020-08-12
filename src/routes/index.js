@@ -4,8 +4,8 @@ const stream = require('stream');
 const objHash = require('object-hash');
 const sharp = require('sharp');
 
-module.exports = function(options) {
-	let { config, mongo, getMinio, __, _, log } = options;
+module.exports = function(options, { log }) {
+	let { config, mongo, getMinio, __, _ } = options;
 
 	/* routes */
 	router.get('/_status', async (req, res) => {
@@ -58,11 +58,14 @@ module.exports = function(options) {
 			- blur: No value or Number [1-1000]
 	*/
 	router.get(/^\/i\/(.*)$/, async (req, res) => {
+		let tsStart = __.benchStart()
+		const logger = log.child({ path: req.path });
+
 		if (!req.params || !req.params[0]) return res.json({ success: false, error: 'request_is_incorrect' });
 
 		let domain = await mongo.Domain.findOne({ domain: req.hostname }).exec();
 		if (!domain) {
-			log.debug('/i/', 'Not found domain', req.hostname);
+			logger.warn({ breakpoint: 'domain.check', message: 'No domain found', duration: tsStart() });
 			return res.json({ success: false, error: 'request_is_incorrect' });
 		}
 		if (domain.deleted) return res.json({ success: false, error: 'domain_deleted' });
@@ -80,7 +83,7 @@ module.exports = function(options) {
 		})
 
 		if(!refererPass) {
-			log.debug('/i/', '!RefererPass', referer, domain.settings.referer);
+			logger.warn({ breakpoint: 'referer.check', message: `${domain.settings.referer} != ${referer}`, duration: tsStart()  });
 			return res.json({ success: false, error: 'not_allowed_request' });
 		}
 
@@ -151,7 +154,7 @@ module.exports = function(options) {
 				}
 			});
 
-			log.debug('/i/', 'Got modifiers', modifiers);
+			logger.debug({ message: `modifiers`, modifiers, duration: tsStart()  });
 		}
 
 		let img = await mongo.Image.findOne({ domain: domain.domain, path: path }).exec();
@@ -160,7 +163,10 @@ module.exports = function(options) {
 
 		let refImage = img.reference && img.reference.path ? img.reference : img.original;
 
-		if (_.isEmpty(modifiers)) return sendImage(res, img, refImage, domain.s3.bucket, minio);
+		if (_.isEmpty(modifiers)) {
+			logger.info({ message: `original image`, domain: domain.domain, duration: tsStart()  });
+			return sendImage(res, img, refImage, domain.s3.bucket, minio);
+		}
 
 		let modImageModifiers = Object.assign({}, refImage.modifications, modifiers);
 		let modSign = objHash.MD5(modImageModifiers);
@@ -169,13 +175,11 @@ module.exports = function(options) {
 			return el.hash == modSign;
 		});
 		if (refChildren) {
-			log.debug('/i/', 'Serving already modified image', modSign);
+			logger.info({ message: `modified image cached`, modSign, domain: domain.domain, duration: tsStart()  });
 			return sendImage(res, img, refChildren, domain.s3.bucket, minio);
 		}
 
 		try {
-			log.debug('/i/', 'Modified image not found. Computing');
-
 			let readableStream = await minio.getObject(domain.s3.bucket, `${img.s3_folder}/${refImage.s3_file}`);
 			let writableStream = new stream.PassThrough();
 
@@ -209,14 +213,12 @@ module.exports = function(options) {
 
 			//if do not save modified
 			if(ttl == 0) {
-				log.debug('/i/', 'Skip save. Pipe');
+				logger.info({ message: `modified image piping`, modSign, domain: domain.domain, duration: tsStart()  });
 				res.set({
 					'Content-Type': `image/${format}`
 				});
 				readableStream.pipe(pipeline).pipe(res);
 			} else {
-				log.debug('/i/', 'Saving image');
-
 				readableStream.pipe(pipeline).pipe(writableStream);
 
 				let fileName = `m_${modSign}.${img.format}`;
@@ -241,11 +243,11 @@ module.exports = function(options) {
 				img.refChildren.push(refChildren);
 
 				img = await img.save();
-
+				logger.info({ message: `modified image cache saved`, modSign, domain: domain.domain, duration: tsStart()  });
 				return sendImage(res, img, refChildren, domain.s3.bucket, minio);
 			}
 		} catch (err) {
-			log.error('/i/', 'Sharp error', err.message);
+			logger.error({ message: err.message, breakpoint: 'catch', duration: tsStart()  });
 			return res.json({ success: false, error: 'error_modifying' });
 		}
 	});
